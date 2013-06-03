@@ -15,7 +15,7 @@
 
 \format{An object of class \code{modelorg}}
 
-\source{\url{http://gcrg.ucsd.edu/Downloads/EcoliCore}}
+%\source{\url{http://gcrg.ucsd.edu/Downloads/EcoliCore}}
 
 \references{
 Duarte NC, Herrgard MJ, Palsson BO: Reconstruction and validation of

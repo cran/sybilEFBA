@@ -103,7 +103,6 @@ returns a list containing slots:
 \examples{
 \dontrun{
 	library(sybil)
-	#load("C:\\Users\\Abdelmonem\\Dropbox\\Sybil\\ABD\\sybilEFBA\\data\\iAF1260.Rdata");
 	model=data(iAF1260)
 	
 	# trivial test 1, linear levels for an unbounded rxn

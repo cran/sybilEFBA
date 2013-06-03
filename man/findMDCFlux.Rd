@@ -70,10 +70,6 @@ return list with slot mdcflx containing the new calculated fluxes and status ret
 }
 \examples{
 \dontrun{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
 ## The function is currently defined as
 function (model, wtflux, objVal = NA, lpdir = SYBIL_SETTINGS("OPT_DIRECTION"), 
     solver = SYBIL_SETTINGS("SOLVER"), method = SYBIL_SETTINGS("METHOD"), 

@@ -267,7 +267,9 @@ return(eqn)
 	aux_cnt=num_constr-(nr+3*gpr_rxn+1);
 	#print(paste("no cons:",num_constr,"no var:",num_var));
     cobj <- c(rep(0, nc+gpr_rxn),ifelse(is.na(x),0,ifelse(x,-1,1)) ,rep(0, num_var-(nc+gpr_rxn+ng))) # NA->0 
-
+	
+	cNames=paste(c(rep("x",nc),rep("rxn",gpr_rxn),rep("g",ng),rep("Aux",(num_var-(nc+gpr_rxn+ng)))),
+		 		               c(1:nc,which(gpr_rxn_ind),1:ng,1:(num_var-(nc+gpr_rxn+ng))),sep="" ) ;
         # ---------------------------------------------
         # build problem object
         # ---------------------------------------------
@@ -275,50 +277,53 @@ return(eqn)
             # ----------------------- #
             "glpkAPI" = {
                 out <- vector(mode = "list", length = 4)
-                prob <- initProbGLPK();# new problem
+                prob <- glpkAPI::initProbGLPK();# new problem
                
-                out[[1]] <-  addRowsGLPK(prob, nrows=num_constr)
-		outj <- addColsGLPK(prob, ncols=num_var)
-		setColNameGLPK(prob,c(1:(num_var)),paste(c(rep("x",nc),rep("rxn",gpr_rxn),rep("g",ng),rep("Aux",(num_var-(nc+gpr_rxn+ng)))),
-		               c(1:nc,which(gpr_rxn_ind),1:ng,1:(num_var-(nc+gpr_rxn+ng))),sep="" ) );
-		setObjDirGLPK(prob, GLP_MIN);
+                out[[1]] <-  glpkAPI::addRowsGLPK(prob, nrows=num_constr)
+		outj <- glpkAPI::addColsGLPK(prob, ncols=num_var)
+		#setColNameGLPK(prob,c(1:(num_var)),paste(c(rep("x",nc),rep("rxn",gpr_rxn),rep("g",ng),rep("Aux",(num_var-(nc+gpr_rxn+ng)))),
+		#               c(1:nc,which(gpr_rxn_ind),1:ng,1:(num_var-(nc+gpr_rxn+ng))),sep="" ) );
+		mapply(glpkAPI::setColNameGLPK, j = c(1:(num_var)), cname = cNames, MoreArgs = list(lp = prob));
+
+		glpkAPI::setObjDirGLPK(prob, glpkAPI::GLP_MIN);
                 ## note: when FX or LO value taken from lb and when UP take from UP and when R
-               rtype <- c(rep(GLP_FX, nr+1), rep(GLP_UP, 2*gpr_rxn), ifelse(gprtype=="E",GLP_FX,GLP_DB),rep(GLP_FX,aux_cnt))
+               rtype <- c(rep(glpkAPI::GLP_FX, nr+1), rep(glpkAPI::GLP_UP, 2*gpr_rxn), ifelse(gprtype=="E",glpkAPI::GLP_FX,glpkAPI::GLP_DB),
+			   rep(glpkAPI::GLP_FX,aux_cnt))
 	       
 	        # set the right hand side Sv = b
 
-	       out[[4]] <- setRowsBndsGLPK(prob, c(1:num_constr), lb=rlower, ub=rupper,type=rtype )
+	       out[[4]] <- glpkAPI::setRowsBndsGLPK(prob, c(1:num_constr), lb=rlower, ub=rupper,type=rtype )
         
 	        # add upper and lower bounds: ai <= vi <= bi
-                cc <- setColsBndsObjCoefsGLPK(prob, c(1:num_var),   lower,   upper,  cobj   )
+                cc <- glpkAPI::setColsBndsObjCoefsGLPK(prob, c(1:num_var),   lower,   upper,  cobj   )
                 #print(cc);			
         	#nzLHS=nzijr(LHS);
             #cc <- loadMatrixGLPK(prob,   nzLHS$ne,   nzLHS$ia,  nzLHS$ja,  nzLHS$ar     )
 			TMPmat <- as(LHS, "TsparseMatrix")
-            cc <- loadMatrixGLPK(prob,length(TMPmat@x),ia  = TMPmat@i + 1,ja  = TMPmat@j + 1,ra  = TMPmat@x)
+            cc <- glpkAPI::loadMatrixGLPK(prob,length(TMPmat@x),ia  = TMPmat@i + 1,ja  = TMPmat@j + 1,ra  = TMPmat@x)
                 
-            ctype <- c(rep(GLP_CV, nc), rep(GLP_BV,num_var-nc)); # number of integer variable
-		    setColsKindGLPK(prob,c(1:(num_var)),ctype);
+            ctype <- c(rep(glpkAPI::GLP_CV, nc), rep(glpkAPI::GLP_BV,num_var-nc)); # number of integer variable
+		    glpkAPI::setColsKindGLPK(prob,c(1:(num_var)),ctype);
 
                 if (verboseMode > 2) {                      
 				        fname=format(Sys.time(), "glpk_eFBA_%Y%m%d_%H%M.lp");
 					print(sprintf("writing problem to: %s/%s...",getwd(),fname));
-		                	writeLPGLPK(prob,fname);
+		                	glpkAPI::writeLPGLPK(prob,fname);
 		                	print("Solving...");
                 }
                 
                 ## Solve
-                setMIPParmGLPK(PRESOLVE,GLP_ON);
-		lp_ok=solveMIPGLPK(prob);
+                glpkAPI::setMIPParmGLPK(glpkAPI::PRESOLVE,glpkAPI::GLP_ON);
+		lp_ok=glpkAPI::solveMIPGLPK(prob);
 		 if (verboseMode > 2) {
-		 	print(return_codeGLPK(lp_ok));
+		 	print(glpkAPI::return_codeGLPK(lp_ok));
 		 	}
-		lp_stat=mipStatusGLPK(prob);
+		lp_stat=glpkAPI::mipStatusGLPK(prob);
 		 if (verboseMode > 2) {
-		 	print(status_codeGLPK(lp_stat));
+		 	print(glpkAPI::status_codeGLPK(lp_stat));
 		 	}
-		lp_obj=mipObjValGLPK(prob);
-		colst=mipColsValGLPK(prob);
+		lp_obj=glpkAPI::mipObjValGLPK(prob);
+		colst=glpkAPI::mipColsValGLPK(prob);
 		newFlux=colst
 	       ## --- 
 	        newFlux=sybil:::.floorValues(newFlux,tol=Tf);
@@ -330,24 +335,21 @@ return(eqn)
             # ----------------------- ----------------------- ------------------------- ----------------------- ----------------------#
            "cplexAPI" = {
                  out <- vector(mode = "list", length = 3)
-				 prob <- openProbCPLEX()
-				 out <- setIntParmCPLEX(prob$env, CPX_PARAM_SCRIND, CPX_OFF)
-		                
-                chgProbNameCPLEX(prob$env, prob$lp, "eFBA gene cplex");
+				 prob <- cplexAPI::openProbCPLEX()
+				 out <- cplexAPI::setIntParmCPLEX(prob$env, cplexAPI::CPX_PARAM_SCRIND, cplexAPI::CPX_OFF)		                
+                
                 # when R: rngval+rhs   to rhs   (rngval<0)
                 rtype <- c(rep("E",nr+1),  rep("L", 2*gpr_rxn),gprtype,rep("R",aux_cnt))
-                prob$lp<- initProbCPLEX(prob$env)
-  		chgProbNameCPLEX(prob$env, prob$lp, "eFBA");
-                 out[[1]] <- newRowsCPLEX(prob$env, prob$lp,
+                prob$lp<- cplexAPI::initProbCPLEX(prob$env)
+				cplexAPI::chgProbNameCPLEX(prob$env, prob$lp, "eFBA gene cplex");
+                 out[[1]] <- cplexAPI::newRowsCPLEX(prob$env, prob$lp,
                                          nrows=num_constr, rhs=rupper, sense=rtype,rngval=rlower-rupper)
 
-                 cNames=paste(c(rep("x",nc),rep("rxn",gpr_rxn),rep("g",ng),rep("Aux",(num_var-(nc+gpr_rxn+ng)))),
-		 		               c(1:nc,which(gpr_rxn_ind),1:ng,1:(num_var-(nc+gpr_rxn+ng))),sep="" ) ;
-                 out[[2]] <- newColsCPLEX(prob$env, prob$lp,
+                 out[[2]] <- cplexAPI::newColsCPLEX(prob$env, prob$lp,
                                          num_var, obj=cobj, lb=lower, ub=upper,cnames=cNames)
           
 				TMPmat <- as(LHS, "TsparseMatrix")
-				out[[3]] <- chgCoefListCPLEX(prob$env, prob$lp,#lp@oobj@env, lp@oobj@lp,
+				out[[3]] <- cplexAPI::chgCoefListCPLEX(prob$env, prob$lp,#lp@oobj@env, lp@oobj@lp,
                                    nnz = length(TMPmat@x),
                                    ia  = TMPmat@i,
                                    ja  = TMPmat@j,
@@ -361,19 +363,19 @@ return(eqn)
           
                 if(num_var>nc){ ctype<-c(rep('C', nc), rep('B',num_var - nc));# integer variables
 				}else{ctype<-rep('C', nc);}
-				status = copyColTypeCPLEX (prob$env, prob$lp, ctype);
-				check <- setObjDirCPLEX(prob$env, prob$lp, CPX_MIN);
+				status = cplexAPI::copyColTypeCPLEX (prob$env, prob$lp, ctype);
+				check <- cplexAPI::setObjDirCPLEX(prob$env, prob$lp, cplexAPI::CPX_MIN);
 		
 	         if (verboseMode > 2) {                      
                    fname=format(Sys.time(), "Cplex_eFBA_gene_%Y%m%d_%H%M.lp");
 	 			    print(sprintf("writing problem to: %s/%s ...",getwd(),fname));
-		 			writeProbCPLEX(prob$env, prob$lp,fname);
+		 			cplexAPI::writeProbCPLEX(prob$env, prob$lp,fname);
 		       }
               #   --------------------------------------------------------------
               print("Solving...");
-	       lp_ok     <- mipoptCPLEX(prob$env, prob$lp);
+	       lp_ok     <- cplexAPI::mipoptCPLEX(prob$env, prob$lp);
 	       print(lp_ok);
-	       sol=solutionCPLEX(prob$env, prob$lp);
+	       sol=cplexAPI::solutionCPLEX(prob$env, prob$lp);
                 if (verboseMode > 2) {
                 	print(sol)
                 	}
@@ -382,7 +384,7 @@ return(eqn)
 					stop("Execution Terminated! error in MILP")
               }
               lp_obj=sol$objval;
-               lp_stat   <- getStatCPLEX(prob$env, prob$lp)
+               lp_stat   <- cplexAPI::getStatCPLEX(prob$env, prob$lp)
               
                colst=sol$x;
                  

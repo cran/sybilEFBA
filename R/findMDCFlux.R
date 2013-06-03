@@ -185,25 +185,25 @@ findMDCFlux <- function(model
                  # ----------------------- #
             "cplexAPI" = {
                 out <- vector(mode = "list", length = 4)
-		prob <- openProbCPLEX()
-                out <- setIntParmCPLEX(prob$env, CPX_PARAM_SCRIND, CPX_OFF)# why?
+		prob <- cplexAPI::openProbCPLEX()
+                out <- cplexAPI::setIntParmCPLEX(prob$env, cplexAPI::CPX_PARAM_SCRIND, cplexAPI::CPX_OFF)# why?
                 
-                chgProbNameCPLEX(prob$env, prob$lp, "ManhatenDist cplex");
+                cplexAPI::chgProbNameCPLEX(prob$env, prob$lp, "ManhatenDist cplex");
                     
-                 setObjDirCPLEX(prob$env, prob$lp, CPX_MIN)
+                 cplexAPI::setObjDirCPLEX(prob$env, prob$lp, cplexAPI::CPX_MIN)
                  rtype <- c(rep("E", nr), rep("G", 2*nd),"G");# Biomass >=
                     
                                 
                 #nzLHS    <- nonZeroElements(LHS)
   		TMPmat <- as(LHS, "TsparseMatrix")
 
-                out[[1]] <- newRowsCPLEX(prob$env, prob$lp,
+                out[[1]] <- cplexAPI::newRowsCPLEX(prob$env, prob$lp,
                                          nRows, rlower, rtype)
                                          
-                out[[2]] <- newColsCPLEX(prob$env, prob$lp,
+                out[[2]] <- cplexAPI::newColsCPLEX(prob$env, prob$lp,
                                          nCols, cobj, lower, upper)
 			# TMPmat
-                out[[3]] <- chgCoefListCPLEX(prob$env, prob$lp,
+                out[[3]] <- cplexAPI::chgCoefListCPLEX(prob$env, prob$lp,
                                             length(TMPmat@x),
                                        TMPmat@i ,
                                        TMPmat@j ,
@@ -212,25 +212,25 @@ findMDCFlux <- function(model
                          #set precision 
                          parm <- sapply(dimnames(solverParm)[[2]],
                                     function(x) eval(parse(text = x)))
-                 out[[4]]  <- setDblParmCPLEX(prob$env, parm, solverParm);
+                 out[[4]]  <- cplexAPI::setDblParmCPLEX(prob$env, parm, solverParm);
                  
                 if (verboseMode > 2) {                      
 		                      fname=format(Sys.time(), "Cplex_ManhatDist_%Y%m%d_%H%M.lp");
 					 print(sprintf("write problem: %s/%s",getwd(),fname));
-					writeProbCPLEX(prob$env, prob$lp,fname);
+					cplexAPI::writeProbCPLEX(prob$env, prob$lp,fname);
 				      
 				       print("Solving...");
 		       }
 		 
 		 
 		 #----Solving---------------------- 
-		lp_ok    <- lpoptCPLEX(prob$env, prob$lp)
-		lp_obj   <- getObjValCPLEX(prob$env, prob$lp)
-		lp_stat   <- getStatCPLEX(prob$env, prob$lp)
+		lp_ok    <- cplexAPI::lpoptCPLEX(prob$env, prob$lp)
+		lp_obj   <- cplexAPI::getObjValCPLEX(prob$env, prob$lp)
+		lp_stat   <- cplexAPI::getStatCPLEX(prob$env, prob$lp)
 		if (is.na(lp_stat)) {
 		    lp_stat <- lp_ok
 		}
-		lp_fluxes <- getProbVarCPLEX(prob$env, prob$lp, 0, nCols - 1)
+		lp_fluxes <- cplexAPI::getProbVarCPLEX(prob$env, prob$lp, 0, nCols - 1)
                # ----------------------- #
             },
             

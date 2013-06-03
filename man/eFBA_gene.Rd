@@ -7,8 +7,8 @@
 \title{ Function: eFBA}
 \description{
 This function performs an expression based flux balance analysis.
-It takes into account the expression status of genes. First step calculate FB as the max biomass using standard FBA
-use FB=cTx as a new constraint in a MILP with a new ojective function
+It takes into account the expression status of genes. First step calculates FB as the max biomass using standard FBA
+then uses FB=cTx as a new constraint in a MILP with a new objective function
      Mininmize: Sum(expr(g) != flux(g)  
   where expr(g)=1 if g is expressed , else 0
          flux(g)=0 if (all reactions catalyzed by g) have no flux(Threshold Tf and sum of all), 0 otherwise.
