@@ -4,7 +4,7 @@
 # Performs an expression based flux balance analysis
 # 
 # Take into account the expression status of genes
-#  first step ind FB as the max biomass using simpleFBA
+#  first step find FB as the max biomass using simpleFBA
 # use FB=cTx as a new constraint in a MILP with a new ojective function
 #      Mininmize: Sum(expr(g)<>flux(g)  // log2 expr level can be used as scaling
 #   where expr(g)=1 if g expressed value>T1, else 0
@@ -326,7 +326,7 @@ return(eqn)
 		colst=glpkAPI::mipColsValGLPK(prob);
 		newFlux=colst
 	       ## --- 
-	        newFlux=sybil:::.floorValues(newFlux,tol=Tf);
+	        newFlux=floor(newFlux/Tf)*Tf#sybil:::.floorValues(newFlux,tol=Tf);
 	        sol_geneStat=ifelse(newFlux[(nc+gpr_rxn+1) : (nc+gpr_rxn+ng)]==1,"ON","OFF");
 	        newFlux=newFlux[1:nc];
 	        newStat=ifelse(abs(newFlux)>Tf,1,0);
@@ -389,7 +389,7 @@ return(eqn)
                colst=sol$x;
                  
                #have flux and gene ON /flux and gene OFF?
-               newFlux=sybil:::.floorValues(sol$x,tol=Tf);
+               newFlux=floor(sol$x/Tf)*Tf#sybil:::.floorValues(sol$x,tol=Tf);
                newFlux=newFlux[1:nc];
                sol_geneStat=ifelse(sol$x[(nc+gpr_rxn+1):(nc+gpr_rxn+ng)]==1,"ON","OFF");
                newStat=ifelse(abs(newFlux)>Tf,1,0);
@@ -408,7 +408,7 @@ return(eqn)
 	       print(sprintf("Total number of rxns: %d",length(rxnStatus) ));
 	       print(sprintf("The differnece is: %.0f ", (lp_obj+length(rxnStatus[rxnStatus==-1])) ));
 
- 		origFlux=sybil:::.floorValues(fluxes(orig_sol)[fldind(orig_sol)],tol=Tf);
+ 		origFlux=floor((fluxes(orig_sol)[fldind(orig_sol)])*Tf)/Tf;#sybil:::.floorValues(fluxes(orig_sol)[fldind(orig_sol)],tol=Tf);
  		
  		#excReact = findExchReact(model)[1];# 1 is position
 		#excReactPos=react_pos(excReact$exchange);

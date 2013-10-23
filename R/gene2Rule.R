@@ -28,7 +28,7 @@ gene2Rule <-function(model,geneExpr,selected_rxns=NULL){
 	   # rules ar in for Sum-of-Product and only two levels ( any rule can be written in this form if not containing NOT)
 			expr_val=0;
 			for( p in 1:length(pr)){
-				gene_ind=match(pr[[p]],geneExpr$geneID)#cope with repitions of genes in complexes which(geneExpr$geneID %in% pr[[p]])
+				gene_ind=match(pr[[p]],geneExpr$GeneID)#cope with repitions of genes in complexes which(geneExpr$geneID %in% pr[[p]])
 				if(length(gene_ind)<length(pr[[p]])){
 					warning(sprintf("Rule %s containing gene names not in geneID list, term no: %d term: %s ",v_rule,p,pr[[p]][1]))
 				}else{
@@ -40,7 +40,7 @@ gene2Rule <-function(model,geneExpr,selected_rxns=NULL){
 		gprExpr=rbind(gprExpr,cbind(rxn_id=react_id(model)[gpr(model)==v_rule],expr_val=expr_val/cnt,gpr=v_rule,cnt=rep(cnt,cnt)))
 		#print(sprintf("Rule: %s cnt: %d expr: %f",v_rule,cnt,expr_val/cnt)) 
 	}
-
+print(is(gprExpr))
 return(gprExpr)
 }
 

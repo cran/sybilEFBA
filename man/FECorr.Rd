@@ -103,8 +103,8 @@ returns a list containing slots:
 \examples{
 \dontrun{
 	library(sybil)
-	model=data(iAF1260)
-	
+	data(iAF1260)
+	model= iAF1260
 	# trivial test 1, linear levels for an unbounded rxn
 	ncnd=3
 	

@@ -17,7 +17,7 @@
 #===========
 # model                 Sybil model structure (class modelorg)
 # nCond					Number of conditions
-# GenExpressionData        a data frame: geneID,Cond_id, ExpressionVal
+# geneExpressionData        a data frame: GeneID,cond_id, expr_val
 		#column rows are genes and column j+1 is representing gene expression under condition j
 ## RuleExpressionData   : rxn_id,cond_id, ExpressionVal		
 # initCond: rxn_id,cond_id,lb,ub,objcoef : lower and upper bounds of rxns under different conditions that represents 
@@ -130,7 +130,7 @@ if (length(gs)==0){
 				if(sum(!(rxnGenes %in% geneExpr$GeneID))>0){
 					v_selected_rxns[r]=FALSE;
 					if(verboseMode>3) {
-						print(sprintf("Rule % of rxn: %d has unidentified genes and will be excluded.",gpr(model)[r],r))
+						print(sprintf("Rule %s of rxn: %d has unidentified genes and will be excluded.",gpr(model)[r],r))
 						print(rxnGenes[!(rxnGenes %in% geneExpr$GeneID)])
 					}
 				}
