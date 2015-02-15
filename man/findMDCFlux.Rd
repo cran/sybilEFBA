@@ -9,7 +9,8 @@ find Manhaten-Distance-Closest Flux
  such that Sum(|v_i-v_wt|) is minimal (like lMOMA but with option to exclude some reactions)
 }
 \usage{
-findMDCFlux(model, wtflux, objVal = NA, lpdir = SYBIL_SETTINGS("OPT_DIRECTION"), 
+findMDCFlux(model, wtflux, objVal = NA, pct_objective=100, 
+        lpdir = SYBIL_SETTINGS("OPT_DIRECTION"), 
        solver = SYBIL_SETTINGS("SOLVER"), method = SYBIL_SETTINGS("METHOD"), 
        solverParm = data.frame(CPX_PARAM_EPRHS = 1e-06), verboseMode = 2)
 }
@@ -18,6 +19,10 @@ findMDCFlux(model, wtflux, objVal = NA, lpdir = SYBIL_SETTINGS("OPT_DIRECTION"),
  \item{model}{   An object of class \code{\link{modelorg}}.}
  
   \item{wtflux}{desired flux distribution, when wtflux is NA its constraint won't be included in LP. 
+}
+\item{pct_objective}{
+  Biomass will be garnteed to be at least this value multiplied by max biomass calculated using standard FBA.
+  Values are 0 to 100.
 }
   \item{objVal}{
 lower bound of objective function, if not set it will be set to maximum biomass.

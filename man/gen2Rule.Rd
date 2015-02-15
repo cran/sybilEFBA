@@ -23,7 +23,7 @@ gene2Rule(model, geneExpr, selected_rxns = NULL)
   \item{model}{ An object of class \code{\link{modelorg}}.
 }
   \item{geneExpr}{
-  a data frame: geneID, expr_val for each gene.
+  a data frame: GeneID, expr_val for each gene.
 }
   \item{selected_rxns}{
   optional parameter to select only a set of reactions.

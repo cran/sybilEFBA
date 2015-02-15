@@ -1,5 +1,15 @@
 sybilEFBA Version History
 
+# ------------------------------------------------------- #
+Version 1.0.2    2015-02-14
+# ------------------------------------------------------- #
+
+- fixed a bug in eFBA_gene
+
+- Changed constraints of eFBA_rxn
+
+- updated documentation
+
 
 # ------------------------------------------------------- #
 Version 1.0.1    2013-10-23

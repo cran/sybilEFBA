@@ -16,7 +16,7 @@ then uses FB=cTx as a new constraint in a MILP with a new objective function
 
 \usage{
 eFBA_gene(model, expressionData,
-                  Tf =1e-5,#SYBIL_SETTINGS("TOLERANCE"),  
+                  Tf =0.01,#SYBIL_SETTINGS("TOLERANCE"),  
 				  pct_objective=100,
  		          lpdir = SYBIL_SETTINGS("OPT_DIRECTION"),
 				  solver = SYBIL_SETTINGS("SOLVER"),
@@ -141,8 +141,8 @@ returns a list containing slots:
 	
 	 slvr="glpkAPI"
 	# run two times, one with genes ON, the other with genes OFF
-	 ser_on = eFBA_gene(model, ex_on,solver=slvr,verbose=3,testgpr=testgpr);
-	 ser_off = eFBA_gene(model, ex_off,solver=slvr,verbose=3,testgpr=testgpr,Tf=0.0001)
+	 ser_on = eFBA_gene(model, ex_on,solver=slvr,verbose=3,testgpr=testgpr,Tf=0.001);
+	 ser_off = eFBA_gene(model, ex_off,solver=slvr,verbose=3,testgpr=testgpr,Tf=0.001)
 	
 	 #print results
 	 cbind(rxn=c('R_PYK','R_FLDR','R_FEROpp'),geneONfluxes=ser_on$rxn[testgpr, "newFlux"],

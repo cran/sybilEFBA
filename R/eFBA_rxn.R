@@ -22,7 +22,7 @@
 #		add parameter pct of objective to get as much considence as possible
  
 eFBA_rxn <- function (model, expressionData,
-                  Tf =1e-5,#SYBIL_SETTINGS("TOLERANCE"),  # threshold on flux 
+                  Tf =0.01,#SYBIL_SETTINGS("TOLERANCE"),  # threshold on flux 
 				  pct_objective=100,
 				   lpdir = SYBIL_SETTINGS("OPT_DIRECTION"),
 				   solver = SYBIL_SETTINGS("SOLVER"),
@@ -187,12 +187,8 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 		print(table(rxnStatus))
 		print("gpr_rxn_ind final:")
 		print(table(gpr_rxn_ind))
-		# N.B: Eps minimal flux should be less than all fluxes and more than tolerance in constraints !!!
 		print(sprintf("default tolerance:%f",Tf));
-        Eps=Tf/3;#min(abs(origFlux[origFlux!=0]))*1e-1; # minimal flux, when it is equal to Tf, it was ignored
-		# if(solverParm>Eps)solverParm[1,1]=Eps*1e-2; # important when usin CPLEX solver
-		#if(solver="cplexAPI"){			Eps=1e-15;			#Tf=1		}
-        INF=max(uppbnd(model));
+        INF=max(uppbnd(model))+1;
         # ---------------------------------------------
         # constraint matrix
         # ---------------------------------------------
@@ -208,21 +204,20 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
        LHS[(nr+1),1:nc] <- obj_coef(model)
 
        # rows for the identifying constraint of flux variables
-       #  Eps*f<=x<=ub*f
-       # irrev( Eps*f<= x <=ub*f ) : 1-  Eps*f -  x  <= 0 : if state is ON
-	#if(nIrrev>0){  # update 22/4/2013: use one variable and one constraint in case of irreversible rxn
-		 if(nIrrev_on>0){
+	   #2/1/2015
+	   #I.Irreversible reaction rule ON: one constraint Tf*fi-vi<=0, objective coefficient:-1
+    	if(nIrrev_on>0){
 				 ii=matrix(c((nr+2)   :(nr+nIrrev_on+1)  ,which(is_irrev_on ) ),ncol=2)
 			 
 				 LHS[ii ] <- -1;
 				 if(nIrrev_on==1){
-					LHS[((nr+2)   :(nr+nIrrev_on+1)) , (nc+1) ]= Eps
+					LHS[((nr+2)   :(nr+nIrrev_on+1)) , (nc+1) ]= Tf
 				 }else{ 
-					diag(LHS[((nr+2)   :(nr+nIrrev_on+1)) , ((nc+1):(nc+nIrrev_on)) ] ) = Eps;
+					diag(LHS[((nr+2)   :(nr+nIrrev_on+1)) , ((nc+1):(nc+nIrrev_on)) ] ) = Tf;
 				 }
 		}
-		   #           2-  -ub*f + x <= Eps : if state is OFF
-		 if(nIrrev_off>0){
+		#II.Irreversible reaction rule OFF: one constraint vi-M*f<=Tf, objective coefficient:1
+		if(nIrrev_off>0){
 			 ii=matrix(c((nr+nIrrev_on+2)   :(nr+nIrrev+1)  , which(is_irrev_off) ),ncol=2)
 				 LHS[ii ] <- 1;
 			 if(nIrrev_off==1){
@@ -232,39 +227,55 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 				}
 		 }
     #}
-  #  -ub*f<=x<=ub*f
-       # rev : 1-  -ub*f -  x  <= Eps
+  #  III.Reversible reaction:reaction rule OFF: 2 constraints
+       # rev : 1-  -M*f -  vi  <= Tf
 	   print(nRev);
   #if(nRev>0){
-	if(nRev_off>0){# Rev/OFF state
-		#- c1offp: + x_1 - 1000 f_1 <= Eps
+	if(nRev_off>0){# Rev/OFF state: two constraints one variable, objective coefficient +1(to be minimized)
+		#- c1offp: + vi - M fi <= Tf
 		ii=matrix(c((nr+nIrrev+2)   :(nr+nIrrev+nRev_off+1)  ,which(is_rev_off) ),ncol=2)
-		LHS[ii ] <- -1;
-		diag(LHS[((nr+nIrrev+2)   :(nr+nIrrev+nRev_off+1)) , ((nc+nIrrev+1):(nc+nIrrev+nRev_off)) ] ) = -INF;
-       # c1offn: - x_1 - 1000 f_1 <= 0.000002
-		print("  #            2-  c1offn: - x_1 - 1000 f_1 <= Eps ")
+		LHS[ii ] <- 1;# vi coef
+		if(nRev_off==1){
+			LHS[((nr+nIrrev+2)   :(nr+nIrrev+nRev_off+1)) , ((nc+nIrrev+1):(nc+nIrrev+nRev_off)) ]  = -INF;
+		}else{
+			diag(LHS[((nr+nIrrev+2)   :(nr+nIrrev+nRev_off+1)) , ((nc+nIrrev+1):(nc+nIrrev+nRev_off)) ] ) = -INF;
+		}
+       # c1offn: - vi - M fi <= Tf
+		print("  #            2-  c1offn: - vi - M fi <= Tf ")
 		ii=matrix(c((nr+nIrrev+nRev_off+2)   :(nr+nIrrev+2*nRev_off+1)  , which(is_rev_off) ),ncol=2)
-		 LHS[ii ] <- -1;
-		diag ( LHS[((nr+nIrrev+nRev_off+2)   :(nr+nIrrev+2*nRev_off+1))  ,    ((nc+nIrrev+1):(nc+nIrrev+nRev_off))]  ) = -INF;
+		LHS[ii ] <- -1;
+		if(nRev_off==1){
+			LHS[((nr+nIrrev+nRev_off+2)   :(nr+nIrrev+2*nRev_off+1))  ,    ((nc+nIrrev+1):(nc+nIrrev+nRev_off))]  = -INF;
+		}else{
+			diag ( LHS[((nr+nIrrev+nRev_off+2)   :(nr+nIrrev+2*nRev_off+1))  ,    ((nc+nIrrev+1):(nc+nIrrev+nRev_off))]  ) = -INF;
+		}
 	}
     
-	print(c("ON:",nRev_on));
-	if(nRev_on>0){		# state ON
-		#print("# rev : 3-  -My+Eps*f -  x  <= 0  ; y=1 when x<0 ,y=0 when x>0");
+	print(c("Rev ON:",nRev_on));
+	if(nRev_on>0){		# state ON :2 Constraints, two integer variables, objective coefficient:-1
 		#Rev: ON bj coef -1 (Max), y mandatory to disable one constraint according to sign(x)
-		print("#c1onp:  Rev/ON 1-:  - x_1 + Eps f_1 - 1000 y_1 <= 0");
+		print("#c1onp:  Rev/ON 1-:  - vi + Tf * fi - M yi <= 0");
 
 		ii=matrix(c((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)  ,which(is_rev_on) ),ncol=2)
 		LHS[ii ] <- -1;
-		diag(LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ] ) = Eps;
-		diag(LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ] ) = -INF;
+		if(nRev_on==1){
+			LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ]  = Tf;
+			LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ]  = -INF;		
+		}else{
+			diag(LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ] ) = Tf;
+			diag(LHS[((nr+nIrrev+2*nRev_off+2)   :(nr+nIrrev+2*nRev_off+nRev_on+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ] ) = -INF;
+		}
        
 		print("#c1onn:    x_1 + 0.000002 f_1 + 1000 y_1 <= 1000");
-		#print("#             4-  -M(1-y)+Eps*f + x <= 0 ")
 		ii=matrix(c((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)  ,which(is_rev_on) ),ncol=2)
-		LHS[ii ] <- 1;  # x
-		diag(LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ] ) = Eps; #f
-		diag(LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ] ) = INF;#y
+		LHS[ii ] <- 1;  # vi
+		if(nRev_on==1){
+			LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ]  = Tf; #f
+			LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ]  = INF;#y
+		}else{
+			diag(LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev_off+1):(nc+nIrrev+nRev)) ] ) = Tf; #f
+			diag(LHS[((nr+nIrrev+2*nRev_off+nRev_on+2)   :(nr+nIrrev+2*nRev+1)) , ((nc+nIrrev+nRev+1):(nc+nIrrev+nRev+nRev_on)) ] ) = INF;#y
+		}
     }
 	   # ---------------------------------------------
        # lower and upper bounds
@@ -274,8 +285,7 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 	upper  <- c(uppbnd(model), rep(1, nIrrev+nRev+nRev_on ))
 	#RHS 1:nr+1 : as FBA model , FB,
 	rlower <- c(rep(0,nr), FB,rep(-INF,nIrrev),rep(-INF,nRev),rep(-2*INF,nRev_on))	# will not be used in identifying constraints
-	rupper <- c(rep(0,nr), FB,rep(0 ,nIrrev),rep(Eps ,2*nRev_off),rep(0 ,nRev_on),rep(INF ,nRev_on))
-#rupper <- c(rep(0,nr), FB,rep(0 ,nIrrev),rep(Eps ,nIrrev),rep(Eps ,2*nRev),rep(0 ,nRev),rep(INF ,nRev))
+	rupper <- c(rep(0,nr), FB,rep(0 ,nIrrev),rep(Tf ,2*nRev_off),rep(0 ,nRev_on),rep(INF ,nRev_on))
 
 
        # ---------------------------------------------
@@ -284,7 +294,7 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
        # Notes: 1-use reaction status instead of gene status
        # Minimize(ifelse(expr(rxn(i),-yi,yi)     math. |x-y|=x-y  when x>=y and y-x when y>=x 
        # then the difference will be Sum(rxn(i))+obj 
-       
+       # ON:-1, OFF:1  maximize ON and minimize OFF
 	    cobj <- c(rep(0, nc), rxnStatus[gpr_rxn_ind],rep(0, nRev_on))
 
         # ---------------------------------------------
@@ -343,7 +353,6 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 			colst=glpkAPI::mipColsValGLPK(prob);
 			newFlux=colst
 	       ## --- 
-	        #newFlux=adjustTol(newFlux,tol=Tf);
 	        newFlux=newFlux[1:nc];
 	        newStat=ifelse(abs(newFlux)>Tf,1,0);
             },
@@ -355,7 +364,7 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 				out <- cplexAPI::setIntParmCPLEX(prob$env, cplexAPI::CPX_PARAM_SCRIND, cplexAPI::CPX_OFF)
 		                
                 cplexAPI::chgProbNameCPLEX(prob$env, prob$lp, "eFBA rxn cplex");
-                #E,L,"G"
+                #E,L,"G": Rowtype
                 rtype <- c(rep("E",nr),"G", rep("L", nIrrev+2*nRev  ))
                 cplexAPI::setObjDirCPLEX(prob$env, prob$lp, cplexAPI::CPX_MIN);
 
@@ -374,8 +383,6 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
                                    ja  = TMPmat@j,
                                    ra  = TMPmat@x);
 							
-#                nzLHS=nzijr();#LHS    
-#print(sprintf("%s : step 3: chngCoef....",format(Sys.time(), "%d-%m-%Y %X")))				
 
 				ctype<-c(rep('C', nc), rep('B',nIrrev+nRev+nRev_on ));
 				status = cplexAPI::copyColTypeCPLEX (prob$env, prob$lp, ctype);
@@ -390,7 +397,7 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 			   #set precision 
                 parm <- sapply(dimnames(solverParm)[[2]],
                                      function(x) eval(parse(text = x)))
-			    if(solverParm>Eps)   
+			    if(solverParm>Tf)   
 					solverParm[1,1]=Tf/10;
 				print(c("solverparam",solverParm));
 			   out[[4]]  <- cplexAPI::setDblParmCPLEX(prob$env, parm, solverParm);
@@ -459,17 +466,3 @@ adjustTol <- function(val, tol = 0.00001) { #SYBIL_SETTINGS("TOLERANCE")
 			  )
 	return(optsol);
 }
-#update one constraint
-# if(nIrrev>0){
-		 # ii=matrix(c((nr+2)   :(nr+nIrrev+1)  ,which(is_irrev) ),ncol=2)
-		 # LHS[ii ] <- -1;
-		 # if(nIrrev==1){
-			# LHS[((nr+2)   :(nr+nIrrev+1)) , ((nc+1):(nc+nIrrev)) ]
-		 # }else{ 
-			# diag(LHS[((nr+2)   :(nr+nIrrev+1)) , ((nc+1):(nc+nIrrev)) ] ) = Eps;
-		 # }
-		  ##           2-  -ub*f + x <= Eps : if state is OFF
-		 # ii=matrix(c((nr+nIrrev+2)   :(nr+2*nIrrev+1)  , which(is_irrev) ),ncol=2)
-			 # LHS[ii ] <- 1;
-		 # diag ( LHS[((nr+nIrrev+2)   :(nr+2*nIrrev+1))  ,    ((nc+1):(nc+nIrrev))]  ) = -INF;
-    # }

@@ -5,6 +5,7 @@
 findMDCFlux <- function(model
         ,wtflux  # desired flux distribution when wtflux is NA don't include its constraint 
 	,objVal = NA #of objval
+	, pct_objective=100
 	 ,lpdir = SYBIL_SETTINGS("OPT_DIRECTION")
 	 ,solver = SYBIL_SETTINGS("SOLVER")
          ,method = SYBIL_SETTINGS("METHOD")
@@ -17,7 +18,7 @@ findMDCFlux <- function(model
       
       if(is.na(objVal)){
       	sol=optimizeProb(model,solver =solver,method=method,solverParm=solverParm);
-      	objVal=lp_obj(sol);
+      	objVal=lp_obj(sol)*pct_objective/100;
       }
       
         out <- FALSE
@@ -125,7 +126,7 @@ findMDCFlux <- function(model
 		outj <- glpkAPI::addColsGLPK(prob, ncols=nCols)
                 #glpkAPI::setColNameGLPK(prob,c(1:(nCols)),paste(c(rep("x",nc),rep("dn",nd),rep("dp",nd)),
 				 #              c(1:nc,which(!is.na(wtflux)),which(!is.na(wtflux))),sep="" ) );
-				 mapply(setColNameGLPK, j = c(1:nCols), cname = cNames, MoreArgs = list(lp = prob));
+				 mapply(glpkAPI::setColNameGLPK, j = c(1:nCols), cname = cNames, MoreArgs = list(lp = prob));
 
 				glpkAPI::setObjDirGLPK(prob, glpkAPI::GLP_MIN);
  
@@ -167,7 +168,7 @@ findMDCFlux <- function(model
              if (verboseMode > 2) {                      
 	    		        fname=format(Sys.time(), "glpk_ManhatDist_%Y%m%d_%H%M.lp");
 	    			print(sprintf("write problem: %s/%s",getwd(),fname));
-	                    	writeLPGLPK(prob,fname);
+	                    	glpkAPI::writeLPGLPK(prob,fname);
 	                    	print("Solving...");
                 }
                 

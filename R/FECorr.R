@@ -231,7 +231,28 @@ all_lm=NULL;
 				fv_max=as.numeric(as.vector(x[,"fv_max"])) )
 			print("rdata")
 			print(rdata)
-			ln=nlm(FVA_CF,c(1,-1),a=rdata,ndigit=15,gradtol=1e-10,steptol=1e-10)
+			#30/10/2013: choose a start solution using lm
+			lnn=lm(rdata[,2]~rdata[,1])#use fv_min points, consider the sign!!
+			 
+			#lnx=lm(rdata[,3]~rdata[,1])
+			#mdpnts=(rdata[,2]+rdata[,3])/2
+			#lnd=lm(mdpnts~rdata[,1])
+			#if(!is.na(lnn$coefficients[2])){ cfn=FVA_CF(p=c(lnn$coefficients[2],lnn$coefficients[1]),rdata);
+			#}else{cfn=1e6}
+			##cfx=FVA_CF(p=c(lnx$coefficients[2],lnx$coefficients[1]),rdata)
+			#if(!is.na(lnd$coefficients[2])){cfd=FVA_CF(p=c(lnd$coefficients[2],lnd$coefficients[1]),rdata)
+			#			}else{cfd=1e6}
+						
+			#if(cfd<cfn){ iln=c(lnx$coefficients[2],lnx$coefficients[1]);
+			#}else{ iln=c(lnm$coefficients[2],lnm$coefficients[1])}
+			#if(cfd<cfn){iln=c(lnd$coefficients[2],lnd$coefficients[1])
+			#}else{iln=c(lnn$coefficients[2],lnn$coefficients[1])}
+			iln=c(lnn$coefficients[2],lnn$coefficients[1])
+			if(is.na(iln[2])|| is.na(iln[1])) iln=c(1,-1);
+			print(iln)
+			#iln=c(1,-1)
+			ln=nlm(FVA_CF,iln,a=rdata,ndigit=15,gradtol=1e-10,steptol=1e-10)
+			#ln=nlm(FVA_CF,c(1,-1),a=rdata,ndigit=15,gradtol=1e-10,steptol=1e-10)
 			p=ln$estimate
 			#print(p)
 
@@ -282,8 +303,8 @@ for(cnd in cnds){
 	 xpr[r_ind]=as.vector(xpc[,"expr_val"]);
 	  # run !!
 	 print(c("Count of wtflx",sum(!is.na(wtflx))));
-	 
-	 iflx=findMDCFlux(model,wtflx)
+	 #31/10/2013: ignore biomass objective
+	 iflx=findMDCFlux(model,wtflx,pct_objective=pct_objective,solver=solver)#,objVal=pct_objective
 	 #print(iflx$mdcflx[gpr_rxn_ind])
 	 	 all_iflx=rbind(all_iflx,cbind(cnd=rep(cnd,nc),rxn_id=react_id(model),lb=lowbnd(model),ub=uppbnd(model),gpr=gpr(model),
 		expr_val=xpr,selected=gpr_rxn_ind,de_gpr,blocked_rxns,fvmin,fvmax,xpc=wtflx,iflx=iflx$mdcflx))#,fv_min=,fv_max
